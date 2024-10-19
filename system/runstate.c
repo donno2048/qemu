@@ -821,12 +821,19 @@ static bool main_loop_should_exit(int *status)
 int qemu_main_loop(void)
 {
     int status = EXIT_SUCCESS;
-
     while (!main_loop_should_exit(&status)) {
         main_loop_wait(false);
     }
 
     return status;
+}
+
+void emscripten_main_loop(void) {
+    int status = EXIT_SUCCESS;
+    if (!main_loop_should_exit(&status)) {
+        main_loop_wait(false);
+    }
+    qemu_cleanup(status);
 }
 
 void qemu_add_exit_notifier(Notifier *notify)

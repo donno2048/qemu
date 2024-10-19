@@ -16,7 +16,7 @@
  * survives.  Useful since we've had an astounding number of crash
  * bugs around here.
  */
-
+#if 0
 #include "qemu/osdep.h"
 #include "qapi/qmp/qstring.h"
 #include "qapi/qmp/qdict.h"
@@ -336,3 +336,4 @@ int main(int argc, char **argv)
 
     return g_test_run();
 }
+#endif

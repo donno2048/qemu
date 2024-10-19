@@ -270,26 +270,6 @@ endif
 # Compiler flags #
 ##################
 
-foreach lang : all_languages
-  compiler = meson.get_compiler(lang)
-  if compiler.get_id() == 'gcc' and compiler.version().version_compare('>=7.4')
-    # ok
-  elif compiler.get_id() == 'clang' and compiler.compiles('''
-      #ifdef __apple_build_version__
-      # if __clang_major__ < 12 || (__clang_major__ == 12 && __clang_minor__ < 0)
-      #  error You need at least XCode Clang v12.0 to compile QEMU
-      # endif
-      #else
-      # if __clang_major__ < 10 || (__clang_major__ == 10 && __clang_minor__ < 0)
-      #  error You need at least Clang v10.0 to compile QEMU
-      # endif
-      #endif''')
-    # ok
-  else
-    error('You either need GCC v7.4 or Clang v10.0 (or XCode Clang v12.0) to compile QEMU')
-  endif
-endforeach
-
 # default flags for all hosts
 # We use -fwrapv to tell the compiler that we require a C dialect where
 # left shift of signed integers is well defined and has the expected
@@ -396,9 +376,9 @@ endif
 # instead, we can't add -no-pie because it overrides -shared: the linker then
 # tries to build an executable instead of a shared library and fails.  So
 # don't add -no-pie anywhere and cross fingers. :(
-if not get_option('b_pie')
-  qemu_common_flags += cc.get_supported_arguments('-fno-pie', '-no-pie')
-endif
+#if not get_option('b_pie')
+#  qemu_common_flags += cc.get_supported_arguments('-fno-pie', '-no-pie')
+#endif
 
 if not get_option('stack_protector').disabled()
   stack_protector_probe = '''
@@ -815,7 +795,7 @@ tcg_arch = host_arch
 if get_option('tcg').allowed()
   if host_arch == 'unknown'
     if not get_option('tcg_interpreter')
-      error('Unsupported CPU @0@, try --enable-tcg-interpreter'.format(cpu))
+#      error('Unsupported CPU @0@, try --enable-tcg-interpreter'.format(cpu))
     endif
   elif get_option('tcg_interpreter')
     warning('Use of the TCG interpreter is not recommended on this host')
@@ -1032,11 +1012,8 @@ if 'ust' in get_option('trace_backends')
   lttng = dependency('lttng-ust', required: true, version: '>= 2.1',
                      method: 'pkg-config')
 endif
-pixman = not_found
-if not get_option('pixman').auto() or have_system or have_tools
-  pixman = dependency('pixman-1', required: get_option('pixman'), version:'>=0.21.8',
-                      method: 'pkg-config')
-endif
+
+pixman = dependency('pixman-1', required: true, version:'>=0.21.8', method: 'pkg-config')
 
 zlib = dependency('zlib', required: true)
 
@@ -2382,7 +2359,7 @@ config_host_data.set('CONFIG_SECCOMP', seccomp.found())
 if seccomp.found()
   config_host_data.set('CONFIG_SECCOMP_SYSRAWRC', seccomp_has_sysrawrc)
 endif
-config_host_data.set('CONFIG_PIXMAN', pixman.found())
+config_host_data.set('CONFIG_PIXMAN', 'y')
 config_host_data.set('CONFIG_SLIRP', slirp.found())
 config_host_data.set('CONFIG_SNAPPY', snappy.found())
 config_host_data.set('CONFIG_SOLARIS', host_os == 'sunos')
@@ -3091,7 +3068,7 @@ have_ivshmem = config_host_data.get('CONFIG_EVENTFD')
 host_kconfig = \
   (get_option('fuzzing') ? ['CONFIG_FUZZ=y'] : []) + \
   (have_tpm ? ['CONFIG_TPM=y'] : []) + \
-  (pixman.found() ? ['CONFIG_PIXMAN=y'] : []) + \
+  (['CONFIG_PIXMAN=y']) + \
   (spice.found() ? ['CONFIG_SPICE=y'] : []) + \
   (have_ivshmem ? ['CONFIG_IVSHMEM=y'] : []) + \
   (opengl.found() ? ['CONFIG_OPENGL=y'] : []) + \

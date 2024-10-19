@@ -27,6 +27,8 @@
 /* Define to jump the ELF file used to communicate with GDB.  */
 #undef DEBUG_JIT
 
+#define FFI_NATIVE_RAW_API 0
+
 #include "qemu/error-report.h"
 #include "qemu/cutils.h"
 #include "qemu/host-utils.h"
@@ -38,6 +40,7 @@
 #include "exec/tlb-common.h"
 #include "tcg/startup.h"
 #include "tcg/tcg-op-common.h"
+#include "ffi.h"
 
 #if UINTPTR_MAX == UINT32_MAX
 # define ELF_CLASS  ELFCLASS32
@@ -60,13 +63,15 @@
 #include "user/guest-base.h"
 #endif
 
+static TranslationBlock *last_tb = NULL;
+
 /* Forward declarations for functions declared in tcg-target.c.inc and
    used here. */
 static void tcg_target_init(TCGContext *s);
 static void tcg_target_qemu_prologue(TCGContext *s);
 static bool patch_reloc(tcg_insn_unit *code_ptr, int type,
                         intptr_t value, intptr_t addend);
-
+void binaryen_module_init(TCGContext *s);
 /* The CIE and FDE header definitions will be common to all hosts.  */
 typedef struct {
     uint32_t len __attribute__((aligned((sizeof(void *)))));
@@ -664,7 +669,7 @@ static void tcg_out_movext3(TCGContext *s, const TCGMovExtend *i1,
 #define C_N1_O1_I4(O1, O2, I1, I2, I3, I4) C_PFX6(c_n1_o1_i4_, O1, O2, I1, I2, I3, I4),
 
 typedef enum {
-#include "tcg-target-con-set.h"
+#include "tcg/i386/tcg-target-con-set.h"
 } TCGConstraintSetIndex;
 
 static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode);
@@ -709,7 +714,7 @@ static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode);
 #define C_N1_O1_I4(O1, O2, I1, I2, I3, I4) { .args_ct_str = { "&" #O1, #O2, #I1, #I2, #I3, #I4 } },
 
 static const TCGTargetOpDef constraint_sets[] = {
-#include "tcg-target-con-set.h"
+#include "tcg/i386/tcg-target-con-set.h"
 };
 
 
@@ -752,7 +757,7 @@ static const TCGTargetOpDef constraint_sets[] = {
 #define C_O2_I4(O1, O2, I1, I2, I3, I4) C_PFX6(c_o2_i4_, O1, O2, I1, I2, I3, I4)
 #define C_N1_O1_I4(O1, O2, I1, I2, I3, I4) C_PFX6(c_n1_o1_i4_, O1, O2, I1, I2, I3, I4)
 
-#include "tcg-target.c.inc"
+#include "tcg/i386/tcg-target.c.inc"
 
 #ifndef CONFIG_TCG_INTERPRETER
 /* Validate CPUTLBDescFast placement. */
@@ -1384,7 +1389,7 @@ void tcg_init(size_t tb_size, int splitwx, unsigned max_cpus)
  */
 TranslationBlock *tcg_tb_alloc(TCGContext *s)
 {
-    uintptr_t align = qemu_icache_linesize;
+    uintptr_t align = 4;
     TranslationBlock *tb;
     void *next;
 
@@ -3056,7 +3061,7 @@ static void process_op_defs(TCGContext *s)
 #define REGS(CASE, MASK) \
     case CASE: def->args_ct[i].regs |= MASK; break;
 
-#include "tcg-target-con-str.h"
+#include "tcg/i386/tcg-target-con-str.h"
 
 #undef REGS
 #undef CONST
@@ -6172,7 +6177,12 @@ int tcg_gen_code(TCGContext *s, TranslationBlock *tb, uint64_t pc_start)
      */
     s->code_buf = tcg_splitwx_to_rw(tb->tc.ptr);
     s->code_ptr = s->code_buf;
-
+    tb->prev_tb = last_tb;
+    last_tb = tb;
+    tb->tb_native_id = ((uintptr_t)(s->code_ptr) - (uintptr_t)(s->code_gen_buffer)) / 4 + 1;
+    tb->wasm_countdown = -1;
+    tb->wasm_instance = NULL;
+    binaryen_module_init(s);
 #ifdef TCG_TARGET_NEED_LDST_LABELS
     QSIMPLEQ_INIT(&s->ldst_labels);
 #endif

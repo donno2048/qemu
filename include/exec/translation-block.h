@@ -141,6 +141,10 @@ struct TranslationBlock {
     uintptr_t jmp_list_head;
     uintptr_t jmp_list_next[2];
     uintptr_t jmp_dest[2];
+    int32_t tb_native_id;
+    int32_t wasm_countdown;
+    void *wasm_instance;
+    TranslationBlock *prev_tb;
 };
 
 /* The alignment given to TranslationBlock during allocation. */

@@ -5,7 +5,7 @@
 #ifndef QEMU_MAIN_H
 #define QEMU_MAIN_H
 
-int qemu_default_main(void);
-extern int (*qemu_main)(void);
+void qemu_default_main(void);
+extern void (*qemu_main)(void);
 
 #endif /* QEMU_MAIN_H */

@@ -85,7 +85,6 @@ QML_FUNC_(spin)
     _Generic((x), QemuLockable *: (x),                                  \
              void *: qemu_null_lockable(x),                             \
              QemuMutex *: qemu_make_lockable(x, QML_OBJ_(x, mutex)),    \
-             QemuRecMutex *: qemu_make_lockable(x, QML_OBJ_(x, rec_mutex)), \
              CoMutex *: qemu_make_lockable(x, QML_OBJ_(x, co_mutex)),   \
              QemuSpin *: qemu_make_lockable(x, QML_OBJ_(x, spin)))
 
@@ -101,7 +100,6 @@ QML_FUNC_(spin)
 #define QEMU_MAKE_LOCKABLE_NONNULL(x)                           \
     _Generic((x), QemuLockable *: (x),                          \
                   QemuMutex *: QML_OBJ_(x, mutex),              \
-                  QemuRecMutex *: QML_OBJ_(x, rec_mutex),       \
                   CoMutex *: QML_OBJ_(x, co_mutex),             \
                   QemuSpin *: QML_OBJ_(x, spin))
 

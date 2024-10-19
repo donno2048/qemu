@@ -174,13 +174,13 @@ fi
 # default parameters
 container_engine="auto"
 cpu=""
-cross_compile="no"
+cross_compile="yes"
 cross_prefix=""
 host_cc="cc"
-EXTRA_CFLAGS=""
-EXTRA_CXXFLAGS=""
+EXTRA_CFLAGS=" -m32 -s USE_ZLIB=1 "
+EXTRA_CXXFLAGS=" -m32 "
 EXTRA_OBJCFLAGS=""
-EXTRA_LDFLAGS=""
+EXTRA_LDFLAGS=" -m32 "
 
 # Default value for a variable defining feature "foo".
 #  * foo="no"  feature will only be used if --enable-foo arg is given
@@ -240,7 +240,6 @@ done
 
 default_cflags='-O2 -g'
 git_submodules_action="update"
-docs="auto"
 EXESUF=""
 system="yes"
 linux_user=""
@@ -333,199 +332,13 @@ int main(void) { return 0; }
 EOF
 }
 
-if check_define __linux__ ; then
-  host_os=linux
-elif check_define _WIN32 ; then
-  host_os=windows
-elif check_define __OpenBSD__ ; then
-  host_os=openbsd
-elif check_define __sun__ ; then
-  host_os=sunos
-elif check_define __HAIKU__ ; then
-  host_os=haiku
-elif check_define __FreeBSD__ ; then
-  host_os=freebsd
-elif check_define __FreeBSD_kernel__ && check_define __GLIBC__; then
-  host_os=gnu/kfreebsd
-elif check_define __DragonFly__ ; then
-  host_os=dragonfly
-elif check_define __NetBSD__; then
-  host_os=netbsd
-elif check_define __APPLE__; then
-  host_os=darwin
-else
-  # This is a fatal error, but don't report it yet, because we
-  # might be going to just print the --help text, or it might
-  # be the result of a missing compiler.
-  host_os=bogus
-fi
-
-if test ! -z "$cpu" ; then
-  # command line argument
-  :
-elif check_define __i386__ ; then
-  cpu="i386"
-elif check_define __x86_64__ ; then
-  if check_define __ILP32__ ; then
-    cpu="x32"
-  else
-    cpu="x86_64"
-  fi
-elif check_define __sparc__ ; then
-  if check_define __arch64__ ; then
-    cpu="sparc64"
-  else
-    cpu="sparc"
-  fi
-elif check_define _ARCH_PPC ; then
-  if check_define _ARCH_PPC64 ; then
-    if check_define _LITTLE_ENDIAN ; then
-      cpu="ppc64le"
-    else
-      cpu="ppc64"
-    fi
-  else
-    cpu="ppc"
-  fi
-elif check_define __mips__ ; then
-  cpu="mips"
-elif check_define __s390__ ; then
-  if check_define __s390x__ ; then
-    cpu="s390x"
-  else
-    cpu="s390"
-  fi
-elif check_define __riscv ; then
-  if check_define _LP64 ; then
-    cpu="riscv64"
-  else
-    cpu="riscv32"
-  fi
-elif check_define __arm__ ; then
-  cpu="arm"
-elif check_define __aarch64__ ; then
-  cpu="aarch64"
-elif check_define __loongarch64 ; then
-  cpu="loongarch64"
-else
-  # Using uname is really broken, but it is just a fallback for architectures
-  # that are going to use TCI anyway
-  cpu=$(uname -m)
-  if test "$host_os" != "bogus"; then
-    echo "WARNING: unrecognized host CPU, proceeding with 'uname -m' output '$cpu'"
-  fi
-fi
-
-# Normalise host CPU name to the values used by Meson cross files and in source
-# directories, and set multilib cflags.  The canonicalization isn't really
-# necessary, because the architectures that we check for should not hit the
-# 'uname -m' case, but better safe than sorry in case --cpu= is used.
-#
-# Note that this case should only have supported host CPUs, not guests.
-# Please keep it sorted and synchronized with meson.build's host_arch.
-host_arch=
-linux_arch=
-case "$cpu" in
-  aarch64)
-    host_arch=aarch64
-    linux_arch=arm64
-    ;;
-
-  armv*b|armv*l|arm)
-    cpu=arm
-    host_arch=arm
-    linux_arch=arm
-    ;;
-
-  i386|i486|i586|i686)
-    cpu="i386"
-    host_arch=i386
-    linux_arch=x86
-    CPU_CFLAGS="-m32"
-    ;;
-
-  loongarch*)
-    cpu=loongarch64
-    host_arch=loongarch64
-    linux_arch=loongarch
-    ;;
-
-  mips64*|mipsisa64*)
-    cpu=mips64
-    host_arch=mips
-    linux_arch=mips
-    ;;
-  mips*)
-    cpu=mips
-    host_arch=mips
-    linux_arch=mips
-    ;;
-
-  ppc)
-    host_arch=ppc
-    linux_arch=powerpc
-    CPU_CFLAGS="-m32"
-    ;;
-  ppc64)
-    host_arch=ppc64
-    linux_arch=powerpc
-    CPU_CFLAGS="-m64 -mbig-endian"
-    ;;
-  ppc64le)
-    cpu=ppc64
-    host_arch=ppc64
-    linux_arch=powerpc
-    CPU_CFLAGS="-m64 -mlittle-endian"
-    ;;
-
-  riscv32 | riscv64)
-    host_arch=riscv
-    linux_arch=riscv
-    ;;
-
-  s390)
-    linux_arch=s390
-    CPU_CFLAGS="-m31"
-    ;;
-  s390x)
-    host_arch=s390x
-    linux_arch=s390
-    CPU_CFLAGS="-m64"
-    ;;
-
-  sparc|sun4[cdmuv])
-    cpu=sparc
-    CPU_CFLAGS="-m32 -mv8plus -mcpu=ultrasparc"
-    ;;
-  sparc64)
-    host_arch=sparc64
-    CPU_CFLAGS="-m64 -mcpu=ultrasparc"
-    ;;
-
-  x32)
-    cpu="x86_64"
-    host_arch=x86_64
-    linux_arch=x86
-    CPU_CFLAGS="-mx32"
-    ;;
-  x86_64|amd64)
-    cpu="x86_64"
-    host_arch=x86_64
-    linux_arch=x86
-    CPU_CFLAGS="-m64"
-    ;;
-esac
-
-if test -n "$host_arch" && {
-    ! test -d "$source_path/linux-user/include/host/$host_arch" ||
-    ! test -d "$source_path/common-user/host/$host_arch"; }; then
-    error_exit "linux-user/include/host/$host_arch does not exist." \
-       "This is a bug in the configure script, please report it."
-fi
-if test -n "$linux_arch" && ! test -d "$source_path/linux-headers/asm-$linux_arch"; then
-    error_exit "linux-headers/asm-$linux_arch does not exist." \
-       "This is a bug in the configure script, please report it."
-fi
+host_os='Emscripten'
+cpu="emscripten"
+cross_cc_emscripten=$host_cc
+supported_cpu="yes"
+host_arch='emscripten'
+#linux_arch='emscripten'
+#cpu="wasm32"
 
 check_py_version() {
     # We require python >= 3.8.
@@ -657,10 +470,6 @@ for opt do
   --cross-cc-*)
   ;;
   --cross-prefix-*)
-  ;;
-  --enable-docs) docs=enabled
-  ;;
-  --disable-docs) docs=disabled
   ;;
   --cpu=*)
   ;;
@@ -970,21 +779,6 @@ meson="$(cd pyvenv/bin; pwd)/meson"
 mkvenv_online_flag=""
 if test "$download" = "enabled" ; then
     mkvenv_online_flag=" --online"
-fi
-
-if test "$docs" != "disabled" ; then
-    if ! $mkvenv ensuregroup \
-         $(test "$docs" = "enabled" && echo "$mkvenv_online_flag") \
-         ${source_path}/pythondeps.toml docs;
-    then
-        if test "$docs" = "enabled" ; then
-            exit 1
-        fi
-        echo "Sphinx not found/usable, disabling docs."
-        docs=disabled
-    else
-        docs=enabled
-    fi
 fi
 
 # Probe for ninja
@@ -1525,7 +1319,6 @@ write_target_makefile() {
 # tests might fail. Prefer to keep the relevant files in their own
 # directory and symlink the directory instead.
 LINKS="Makefile"
-LINKS="$LINKS docs/config"
 LINKS="$LINKS pc-bios/optionrom/Makefile"
 LINKS="$LINKS pc-bios/s390-ccw/Makefile"
 LINKS="$LINKS pc-bios/vof/Makefile"
@@ -1612,9 +1405,11 @@ echo "GENISOIMAGE=$genisoimage" >> $config_host_mak
 echo "MESON=$meson" >> $config_host_mak
 echo "NINJA=$ninja" >> $config_host_mak
 echo "EXESUF=$EXESUF" >> $config_host_mak
+echo "CONFIG_EMSCRIPTEN=y" >> $config_host_mak
 if test "$default_targets" = "yes"; then
   echo "CONFIG_DEFAULT_TARGETS=y" >> $config_host_mak
 fi
+
 
 # contrib/plugins configuration
 echo "# Automatically generated by configure - do not modify" > contrib/plugins/$config_host_mak
@@ -1622,15 +1417,6 @@ echo "SRC_PATH=$source_path/contrib/plugins" >> contrib/plugins/$config_host_mak
 echo "PKG_CONFIG=${pkg_config}" >> contrib/plugins/$config_host_mak
 echo "CC=$cc $CPU_CFLAGS" >> contrib/plugins/$config_host_mak
 echo "CFLAGS=${CFLAGS-$default_cflags} $EXTRA_CFLAGS" >> contrib/plugins/$config_host_mak
-if test "$host_os" = windows; then
-  echo "DLLTOOL=$dlltool" >> contrib/plugins/$config_host_mak
-fi
-if test "$host_os" = darwin; then
-  echo "CONFIG_DARWIN=y" >> contrib/plugins/$config_host_mak
-fi
-if test "$host_os" = windows; then
-  echo "CONFIG_WIN32=y" >> contrib/plugins/$config_host_mak
-fi
 
 # tests/tcg configuration
 mkdir -p tests/tcg
@@ -1796,7 +1582,6 @@ if test "$skip_meson" = no; then
 
   # QEMU options
   test "$cfi" != false && meson_option_add "-Dcfi=$cfi" "-Db_lto=$cfi"
-  test "$docs" != auto && meson_option_add "-Ddocs=$docs"
   test -n "${LIB_FUZZING_ENGINE+xxx}" && meson_option_add "-Dfuzzing_engine=$LIB_FUZZING_ENGINE"
   test "$plugins" = yes && meson_option_add "-Dplugins=true"
   test "$tcg" != enabled && meson_option_add "-Dtcg=$tcg"

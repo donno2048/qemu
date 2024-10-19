@@ -23,6 +23,7 @@
 #include "hw/core/cpu.h"
 #include "sysemu/cpus.h"
 #include "qemu/lockable.h"
+#include "qemu/thread.h"
 #include "trace/trace-root.h"
 
 QemuMutex qemu_cpu_list_lock;
@@ -140,14 +141,17 @@ static void queue_work_on_cpu(CPUState *cpu, struct qemu_work_item *wi)
 
     qemu_cpu_kick(cpu);
 }
-
+static int cur_id = 0;
 void do_run_on_cpu(CPUState *cpu, run_on_cpu_func func, run_on_cpu_data data,
                    QemuMutex *mutex)
 {
     struct qemu_work_item wi;
-
+    QemuThread thread;
+    thread.id = cur_id;
+    cur_id = first_cpu->thread->id;
     if (qemu_cpu_is_self(cpu)) {
         func(cpu, data);
+        cur_id = thread.id;
         return;
     }
 

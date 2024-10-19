@@ -40,4 +40,5 @@ void thread_pool_submit(ThreadPoolFunc *func, void *arg);
 
 void thread_pool_update_params(ThreadPool *pool, struct AioContext *ctx);
 
+void iothread_single_step(void);
 #endif
