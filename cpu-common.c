@@ -141,17 +141,22 @@ static void queue_work_on_cpu(CPUState *cpu, struct qemu_work_item *wi)
 
     qemu_cpu_kick(cpu);
 }
+#ifdef __EMSCRIPTEN__
 static int cur_id = 0;
+#endif
 void do_run_on_cpu(CPUState *cpu, run_on_cpu_func func, run_on_cpu_data data,
                    QemuMutex *mutex)
 {
     struct qemu_work_item wi;
-    QemuThread thread;
-    thread.id = cur_id;
+#ifdef __EMSCRIPTEN__
+    int id = cur_id;
     cur_id = first_cpu->thread->id;
+#endif
     if (qemu_cpu_is_self(cpu)) {
         func(cpu, data);
-        cur_id = thread.id;
+#ifdef __EMSCRIPTEN__
+        cur_id = id;
+#endif
         return;
     }
 

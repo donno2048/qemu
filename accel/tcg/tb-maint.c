@@ -790,12 +790,13 @@ void tb_flush(CPUState *cpu)
     if (tcg_enabled()) {
         unsigned tb_flush_count = qatomic_read(&tb_ctx.tb_flush_count);
 
-        //if (cpu_in_serial_context(cpu)) {
-        //    do_tb_flush(cpu, RUN_ON_CPU_HOST_INT(tb_flush_count));
-        //} else {
+#ifndef __EMSCRIPTEN__
+        if (cpu_in_serial_context(cpu)) {
+            do_tb_flush(cpu, RUN_ON_CPU_HOST_INT(tb_flush_count));
+        } else
+#endif
             async_safe_run_on_cpu(cpu, do_tb_flush,
                                   RUN_ON_CPU_HOST_INT(tb_flush_count));
-        //}
     }
 }
 
@@ -853,8 +854,12 @@ static inline void tb_remove_from_jmp_list(TranslationBlock *orig, int n_orig)
  */
 void tb_reset_jump(TranslationBlock *tb, int n)
 {
-    //uintptr_t addr = (uintptr_t)(tb->tc.ptr + tb->jmp_reset_offset[n]);
+#ifdef __EMSCRIPTEN__
     tb_set_jmp_target(tb, n, (uintptr_t)NULL);
+#else
+    uintptr_t addr = (uintptr_t)(tb->tc.ptr + tb->jmp_reset_offset[n]);
+    tb_set_jmp_target(tb, n, addr);
+#endif
 }
 
 /* remove any jumps to the TB */

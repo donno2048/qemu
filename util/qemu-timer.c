@@ -351,7 +351,12 @@ int qemu_poll_ns(GPollFD *fds, guint nfds, int64_t timeout)
         return ppoll((struct pollfd *)fds, nfds, &ts, NULL);
     }
 #else
-    return g_poll(fds, nfds, 0);
+#if defined(__EMSCRIPTEN__)
+#define to 0
+#else
+#define to qemu_timeout_ns_to_ms(timeout)
+#endif
+    return g_poll(fds, nfds, to);
 #endif
 }
 

@@ -32,7 +32,6 @@
 #include "qemu/notify.h"
 #include "qemu/guest-random.h"
 #include "exec/exec-all.h"
-#include "tcg/startup.h"
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
@@ -111,10 +110,16 @@ static void rr_wait_io_event(void)
 {
     CPUState *cpu;
 
-    if (all_cpu_threads_idle()) {
+#ifdef __EMSCRIPTEN__
+    if (all_cpu_threads_idle())
+#else
+    while (all_cpu_threads_idle()) {
+#endif
         rr_stop_kick_timer();
-        // qemu_cond_wait_bql(first_cpu->halt_cond);
+#ifndef __EMSCRIPTEN__
+        qemu_cond_wait_bql(first_cpu->halt_cond);
     }
+#endif
 
     rr_start_kick_timer();
 
@@ -184,9 +189,11 @@ static void *rr_cpu_thread_fn(void *arg)
     Notifier force_rcu;
     CPUState *cpu = arg;
 
+#ifdef __EMSCRIPTEN__
     qemu_mutex_lock(&rcu_registry_lock);
     QLIST_INSERT_HEAD(&registry, &rcu_reader_array[cur_id], node);
     qemu_mutex_unlock(&rcu_registry_lock);
+#endif
 
     assert(tcg_enabled());
     rcu_register_thread();
@@ -202,16 +209,19 @@ static void *rr_cpu_thread_fn(void *arg)
     cpu_thread_signal_created(cpu);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
 
+#ifndef __EMSCRIPTEN__
     /* wait for initial kick-off after machine start */
-/*    while (first_cpu->stopped) {
+    while (first_cpu->stopped) {
         qemu_cond_wait_bql(first_cpu->halt_cond);
 
+        /* process any pending work */
         CPU_FOREACH(cpu) {
             current_cpu = cpu;
             qemu_wait_io_event_common(cpu);
         }
     }
-*/
+#endif
+
     rr_start_kick_timer();
 
     cpu = first_cpu;
@@ -219,16 +229,38 @@ static void *rr_cpu_thread_fn(void *arg)
     /* process any pending work */
     cpu->exit_request = 1;
 
+#ifdef __EMSCRIPTEN__
     bql_unlock();
     replay_mutex_lock();
+#endif
 
     while (1) {
         /* Only used for icount_enabled() */
         int64_t cpu_budget = 0;
+
+#ifdef __EMSCRIPTEN__
         if (!first_cpu || !first_cpu->thread) continue;
         cur_id = first_cpu->thread->id;
         bql_lock();
+#else
+        bql_unlock();
+        replay_mutex_lock();
+        bql_lock();
 
+        if (icount_enabled()) {
+            int cpu_count = rr_cpu_count();
+
+            /* Account partial waits to QEMU_CLOCK_VIRTUAL.  */
+            icount_account_warp_timer();
+            /*
+             * Run the timers here.  This is much more efficient than
+             * waking up the I/O thread and waiting for completion.
+             */
+            icount_handle_deadline();
+
+            cpu_budget = icount_percpu_budget(cpu_count);
+        }
+#endif
         replay_mutex_unlock();
 
         if (!cpu) {
@@ -293,8 +325,10 @@ static void *rr_cpu_thread_fn(void *arg)
 
         rr_wait_io_event();
         rr_deal_with_unplugged_cpus();
+#ifdef __EMSCRIPTEN__
         bql_unlock();
         replay_mutex_lock();
+#endif
     }
 
     g_assert_not_reached();

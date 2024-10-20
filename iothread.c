@@ -69,8 +69,9 @@ static void *iothread_run(void *opaque)
          * other words, when we want to run the gcontext with the
          * iothread we need to pay some performance for functionality.
          */
+#ifdef __EMSCRIPTEN__
         qemu_thread_switch(&iothread->thread);
-
+#endif
         aio_poll(iothread->ctx, true);
 
         /*
@@ -87,6 +88,7 @@ static void *iothread_run(void *opaque)
     return NULL;
 }
 
+#ifdef __EMSCRIPTEN__
 void iothread_single_step(void)
 {
     qemu_thread_switch(cur_thread);
@@ -94,6 +96,7 @@ void iothread_single_step(void)
 
     if (*cur_thread_running && qatomic_read(cur_thread_gcontext)) g_main_loop_run(*cur_loop);
 }
+#endif
 
 /* Runs in iothread_run() thread */
 static void iothread_stop_bh(void *opaque)

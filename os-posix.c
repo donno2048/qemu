@@ -56,7 +56,9 @@ static void termsig_handler(int signal, siginfo_t *info, void *c)
 
 void os_setup_signal_handling(void)
 {
+#ifdef __EMSCRIPTEN__
     return;
+#endif
     struct sigaction act;
 
     memset(&act, 0, sizeof(act));

@@ -10,6 +10,8 @@
 #ifndef TCG_ACCEL_OPS_RR_H
 #define TCG_ACCEL_OPS_RR_H
 
+#include "tcg/startup.h"
+
 #define TCG_KICK_PERIOD (NANOSECONDS_PER_SECOND / 10)
 
 /* Kick all RR vCPUs. */
@@ -18,4 +20,7 @@ void rr_kick_vcpu_thread(CPUState *unused);
 /* start the round robin vcpu thread */
 void rr_start_vcpu_thread(CPUState *cpu);
 
+static void rr_force_rcu(Notifier *notify, void *data);
+
+static void rr_start_kick_timer(void);
 #endif /* TCG_ACCEL_OPS_RR_H */

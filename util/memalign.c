@@ -27,7 +27,6 @@
 #include "qemu/osdep.h"
 #include "qemu/host-utils.h"
 #include "qemu/memalign.h"
-#include "dlmalloc.c" // TODO: is this necessary?
 #include "trace.h"
 
 void *qemu_try_memalign(size_t alignment, size_t size)
@@ -49,7 +48,22 @@ void *qemu_try_memalign(size_t alignment, size_t size)
     if (size == 0) {
         size++;
     }
+#if defined(CONFIG_POSIX_MEMALIGN)
+    int ret;
+    ret = posix_memalign(&ptr, alignment, size);
+    if (ret != 0) {
+        errno = ret;
+        ptr = NULL;
+    }
+#elif defined(CONFIG_ALIGNED_MALLOC)
+    ptr = _aligned_malloc(size, alignment);
+#elif defined(CONFIG_VALLOC) || defined(__EMSCRIPTEN__)
     ptr = valloc(size);
+#elif defined(CONFIG_MEMALIGN)
+    ptr = memalign(alignment, size);
+#else
+    #error No function to allocate aligned memory available
+#endif
     trace_qemu_memalign(alignment, size, ptr);
     return ptr;
 }

@@ -40,5 +40,7 @@ void thread_pool_submit(ThreadPoolFunc *func, void *arg);
 
 void thread_pool_update_params(ThreadPool *pool, struct AioContext *ctx);
 
+#ifdef __EMSCRIPTEN__
 void iothread_single_step(void);
+#endif
 #endif

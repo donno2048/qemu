@@ -51,10 +51,14 @@
  * causing stalls on some architectures.
  */
 extern unsigned long rcu_gp_ctr;
-typedef QLIST_HEAD(, rcu_reader_data) ThreadList;
+
 extern QemuEvent rcu_gp_event;
+
+#ifdef __EMSCRIPTEN__
+typedef QLIST_HEAD(, rcu_reader_data) ThreadList;
 static QemuMutex rcu_registry_lock;
 static ThreadList registry;
+#endif
 
 struct rcu_reader_data {
     /* Data used by both reader and synchronize_rcu() */
@@ -75,7 +79,9 @@ struct rcu_reader_data {
     NotifierList force_rcu;
 };
 
+#ifdef __EMSCRIPTEN__
 extern __thread struct rcu_reader_data rcu_reader_array[10];
+#endif
 
 QEMU_DECLARE_CO_TLS(struct rcu_reader_data, rcu_reader)
 
@@ -143,7 +149,11 @@ struct rcu_head {
     struct rcu_head *next;
     RCUCBFunc *func;
 };
+
+#ifdef __EMSCRIPTEN__
 void call_thread(void);
+#endif
+
 void call_rcu1(struct rcu_head *head, RCUCBFunc *func);
 void drain_call_rcu(void);
 

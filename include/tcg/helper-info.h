@@ -12,7 +12,7 @@
 #ifdef CONFIG_TCG_INTERPRETER
 #include <ffi.h>
 #endif
-#include "tcg/i386/tcg-target-reg-bits.h"
+#include "tcg-target-reg-bits.h"
 
 #define MAX_CALL_IARGS  7
 

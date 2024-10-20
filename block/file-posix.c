@@ -38,13 +38,13 @@
 #include "block/raw-aio.h"
 #include "qapi/qmp/qdict.h"
 #include "qapi/qmp/qstring.h"
-#include <sys/ioctl.h>
 
 #include "scsi/pr-manager.h"
 #include "scsi/constants.h"
 
-#if defined(__APPLE__) && (__MACH__)
-#if defined(HAVE_HOST_BLOCK_DEVICE)
+#if defined(__EMSCRIPTEN__) || (defined(__APPLE__) && (__MACH__))
+#include <sys/ioctl.h>
+#if defined(HAVE_HOST_BLOCK_DEVICE) && !defined(__EMSCRIPTEN__)
 #include <paths.h>
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -2001,6 +2001,20 @@ static int handle_aiocb_write_zeroes_unmap(void *opaque)
      * all-zero afterwards, just write zeroes without unmapping */
     return handle_aiocb_write_zeroes(aiocb);
 }
+
+#if !defined(__EMSCRIPTEN__) && !defined(HAVE_COPY_FILE_RANGE)
+static off_t copy_file_range(int in_fd, off_t *in_off, int out_fd,
+                             off_t *out_off, size_t len, unsigned int flags)
+{
+#ifdef __NR_copy_file_range
+    return syscall(__NR_copy_file_range, in_fd, in_off, out_fd,
+                   out_off, len, flags);
+#else
+    errno = ENOSYS;
+    return -1;
+#endif
+}
+#endif
 
 /*
  * parse_zone - Fill a zone descriptor

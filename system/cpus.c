@@ -475,9 +475,11 @@ void cpus_kick_thread(CPUState *cpu)
         return;
     }
     cpu->thread_kicked = true;
-
-#ifndef _WIN32
-    int err = 1;
+#ifdef __EMSCRIPTEN__
+    fprintf(stderr, "qemu:%s: %s", __func__, strerror(1));
+    exit(1);
+#elif !defined(_WIN32)
+    int err = pthread_kill(cpu->thread->thread, SIG_IPI);
     if (err && err != ESRCH) {
         fprintf(stderr, "qemu:%s: %s", __func__, strerror(err));
         exit(1);
@@ -683,12 +685,14 @@ void qemu_init_vcpu(CPUState *cpu)
     /* accelerators all implement the AccelOpsClass */
     g_assert(cpus_accel != NULL && cpus_accel->create_vcpu_thread != NULL);
     cpus_accel->create_vcpu_thread(cpu);
+#ifdef __EMSCRIPTEN__
     bql_unlock();
     current_cpu = first_cpu;
     cur_id = first_cpu->thread->id;
-    CPU_FOREACH(cpu) {
+    CPUState *_cpu;
+    CPU_FOREACH(_cpu) {
         Notifier force_rcu;
-        CPUState *copy = cpu;
+        CPUState *copy = _cpu;
         qemu_mutex_lock(&rcu_registry_lock);
         QLIST_INSERT_HEAD(&registry, &rcu_reader_array[cur_id], node);
         qemu_mutex_unlock(&rcu_registry_lock);
@@ -710,6 +714,11 @@ void qemu_init_vcpu(CPUState *cpu)
     }
     cur_id = 0;
     bql_lock();
+#else
+    while (!cpu->created) {
+        qemu_cond_wait(&qemu_cpu_cond, &bql);
+    }
+#endif
 }
 
 void cpu_stop_current(void)

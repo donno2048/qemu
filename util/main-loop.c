@@ -34,6 +34,7 @@
 #include "qemu/error-report.h"
 #include "qemu/queue.h"
 #include "qom/object.h"
+#include "qemu/rcu.h"
 
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -86,15 +87,25 @@ static void sigfd_handler(void *opaque)
 
 static int qemu_signal_init(Error **errp)
 {
-/*
+#ifndef __EMSCRIPTEN__
     int sigfd;
     sigset_t set;
 
+    /*
+     * SIG_IPI must be blocked in the main thread and must not be caught
+     * by sigwait() in the signal thread. Otherwise, the cpu thread will
+     * not catch it reliably.
+     */
     sigemptyset(&set);
     sigaddset(&set, SIG_IPI);
     sigaddset(&set, SIGIO);
     sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGBUS);
+    /* SIGINT cannot be handled via signalfd, so that ^C can be used
+     * to interrupt QEMU when it is being run under gdb.  SIGHUP and
+     * SIGTERM are also handled asynchronously, even though it is not
+     * strictly necessary, because they use the same handler as SIGINT.
+     */
     pthread_sigmask(SIG_BLOCK, &set, NULL);
 
     sigdelset(&set, SIG_IPI);
@@ -107,7 +118,7 @@ static int qemu_signal_init(Error **errp)
     g_unix_set_fd_nonblocking(sigfd, true, NULL);
 
     qemu_set_fd_handler(sigfd, sigfd_handler, NULL, (void *)(intptr_t)sigfd);
-*/
+#endif
     return 0;
 }
 
@@ -293,11 +304,13 @@ static int os_host_main_loop_wait(int64_t timeout)
     bql_unlock();
     replay_mutex_unlock();
 
+#ifdef __EMSCRIPTEN__
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 50; ++j) call_thread();
         for (int j = 0; j < 50; ++j) iothread_single_step();
-//        for (int j = 0; j < 1000; ++j) qemu_tcg_rr_cpu_thread_func();
+        for (int j = 0; j < 1000; ++j) call_thread();
     }
+#endif
 
 
     ret = qemu_poll_ns((GPollFD *)gpollfds->data, gpollfds->len, timeout);

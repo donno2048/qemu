@@ -97,8 +97,12 @@ void qemu_boot_set(const char *boot_order, Error **errp);
 bool defaults_enabled(void);
 
 void qemu_init(int argc, char **argv);
-int qemu_main_loop(void);
-void emscripten_main_loop(void);
+#ifdef __EMSCRIPTEN__
+#define main_type void
+#else
+#define main_type int
+#endif
+main_type qemu_main_loop(void);
 void qemu_cleanup(int);
 
 extern QemuOptsList qemu_legacy_drive_opts;

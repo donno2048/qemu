@@ -25,21 +25,31 @@
 #include "qemu/osdep.h"
 #include "qemu-main.h"
 #include "sysemu/sysemu.h"
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#ifdef CONFIG_SDL
+#elif defined(CONFIG_SDL)
 #include <SDL.h>
 #endif
 
-void qemu_default_main(void)
+int qemu_default_main(void)
 {
-    emscripten_set_main_loop(emscripten_main_loop, 0, 1);
+    int status;
+
+#ifdef __EMSCRIPTEN__
+    status = 0;
+    emscripten_set_main_loop(qemu_main_loop, 0, 1);
+#else
+    status = qemu_main_loop();
+    qemu_cleanup(status);
+#endif
+
+    return status;
 }
 
-void (*qemu_main)(void) = qemu_default_main;
+int (*qemu_main)(void) = qemu_default_main;
 
 int main(int argc, char **argv)
 {
     qemu_init(argc, argv);
-    qemu_main();
-    return 0;
+    return qemu_main();
 }

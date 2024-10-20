@@ -7,7 +7,7 @@
 #ifndef EXEC_TCG_OVERSIZED_GUEST_H
 #define EXEC_TCG_OVERSIZED_GUEST_H
 
-#include "tcg/i386/tcg-target-reg-bits.h"
+#include "tcg-target-reg-bits.h"
 #include "cpu-param.h"
 
 /*

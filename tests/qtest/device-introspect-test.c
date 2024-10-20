@@ -16,7 +16,7 @@
  * survives.  Useful since we've had an astounding number of crash
  * bugs around here.
  */
-#if 0
+#ifndef __EMSCRIPTEN__
 #include "qemu/osdep.h"
 #include "qapi/qmp/qstring.h"
 #include "qapi/qmp/qdict.h"

@@ -365,13 +365,14 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 }
 
 #else
-
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
-//    if (rw != rx) {
-//        __builtin___clear_cache((char *)rw, (char *)rw + len);
-//    }
-//    __builtin___clear_cache((char *)rx, (char *)rx + len);
+#ifndef __EMSCRIPTEN__
+    if (rw != rx) {
+        __builtin___clear_cache((char *)rw, (char *)rw + len);
+    }
+    __builtin___clear_cache((char *)rx, (char *)rx + len);
+#endif
 }
 
 #endif

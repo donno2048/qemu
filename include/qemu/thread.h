@@ -10,6 +10,14 @@ typedef struct QemuSemaphore QemuSemaphore;
 typedef struct QemuEvent QemuEvent;
 typedef struct QemuLockCnt QemuLockCnt;
 typedef struct QemuThread QemuThread;
+
+#ifndef __EMSCRIPTEN__
+#ifdef _WIN32
+#include "qemu/thread-win32.h"
+#else
+#include "qemu/thread-posix.h"
+#endif
+#else
 typedef struct QemuMutex QemuRecMutex;
 
 #define qemu_rec_mutex_destroy qemu_mutex_destroy
@@ -52,7 +60,7 @@ static int cur_id;
 
 void qemu_thread_switch_to_main(void);
 void qemu_thread_switch(QemuThread *thread);
-
+#endif
 
 /* include QSP header once QemuMutex, QemuCond etc. are defined */
 #include "qemu/qsp.h"
