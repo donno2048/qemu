@@ -365,6 +365,7 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 }
 
 #else
+
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
 #ifndef __EMSCRIPTEN__

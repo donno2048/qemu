@@ -4,7 +4,7 @@
  */
 
 #include "qemu/osdep.h"
-#include "host/include/i386/host/cpuinfo.h"
+#include "host/cpuinfo.h"
 #ifdef CONFIG_CPUID_H
 # include "qemu/cpuid.h"
 #endif

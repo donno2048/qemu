@@ -20,9 +20,3 @@ GTAGS
 *.swp
 *.patch
 *.gcov
-*.so
-*.wasm
-*.worker.js
-util/dlmalloc.c
-a.out.js
-scripts/meson-buildoptions.sh.tmp

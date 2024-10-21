@@ -25,7 +25,7 @@
 #ifndef I386_TCG_TARGET_H
 #define I386_TCG_TARGET_H
 
-#include "host/include/i386/host/cpuinfo.h"
+#include "host/cpuinfo.h"
 
 #define TCG_TARGET_INSN_UNIT_SIZE  1
 
