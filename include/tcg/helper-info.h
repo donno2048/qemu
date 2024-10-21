@@ -10,6 +10,9 @@
 #define TCG_HELPER_INFO_H
 
 #ifdef CONFIG_TCG_INTERPRETER
+#ifdef __EMSCRIPTEN__
+#define FFI_NATIVE_RAW_API 0
+#endif
 #include <ffi.h>
 #endif
 #include "tcg-target-reg-bits.h"
