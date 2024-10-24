@@ -11,55 +11,10 @@ typedef struct QemuEvent QemuEvent;
 typedef struct QemuLockCnt QemuLockCnt;
 typedef struct QemuThread QemuThread;
 
-#ifndef __EMSCRIPTEN__
 #ifdef _WIN32
 #include "qemu/thread-win32.h"
 #else
 #include "qemu/thread-posix.h"
-#endif
-#else
-typedef struct QemuMutex QemuRecMutex;
-
-#define qemu_rec_mutex_destroy qemu_mutex_destroy
-
-void iothread_single_step(void);
-
-#define MAX_THREADS 10
-
-struct QemuMutex {
-    int is_rec;
-    int lock_counter;
-    int owner;
-#ifdef CONFIG_DEBUG_MUTEX
-    const char *file;
-    int line;
-#endif
-    bool initialized;
-};
-
-struct QemuCond {
-    bool initialized;
-};
-
-struct QemuSemaphore {
-    int counter;
-    bool initialized;
-};
-
-struct QemuEvent {
-    int set;
-    bool initialized;
-};
-
-struct QemuThread {
-    int id;
-};
-
-static int cur_id;
-
-
-void qemu_thread_switch_to_main(void);
-void qemu_thread_switch(QemuThread *thread);
 #endif
 
 /* include QSP header once QemuMutex, QemuCond etc. are defined */

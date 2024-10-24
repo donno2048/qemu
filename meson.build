@@ -811,6 +811,8 @@ if get_option('tcg').allowed()
     tcg_arch = 'i386'
   elif host_arch == 'ppc64'
     tcg_arch = 'ppc'
+  elif host_arch == 'emscripten'
+    tcg_arch = 'emscripten'
   endif
   add_project_arguments('-iquote', meson.current_source_dir() / 'tcg' / tcg_arch,
                         language: all_languages)

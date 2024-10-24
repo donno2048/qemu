@@ -822,12 +822,7 @@ main_type qemu_main_loop(void)
 {
     int status = EXIT_SUCCESS;
 
-#ifdef __EMSCRIPTEN__
-    if
-#else
-    while
-#endif
-    (!main_loop_should_exit(&status)) {
+    while (!main_loop_should_exit(&status)) {
         main_loop_wait(false);
     }
 

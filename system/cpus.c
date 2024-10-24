@@ -46,7 +46,6 @@
 #include "hw/boards.h"
 #include "hw/hw.h"
 #include "trace.h"
-#include "accel/tcg/tcg-accel-ops-rr.h"
 
 #ifdef CONFIG_LINUX
 
@@ -475,10 +474,7 @@ void cpus_kick_thread(CPUState *cpu)
         return;
     }
     cpu->thread_kicked = true;
-#ifdef __EMSCRIPTEN__
-    fprintf(stderr, "qemu:%s: %s", __func__, strerror(1));
-    exit(1);
-#elif !defined(_WIN32)
+#ifndef _WIN32
     int err = pthread_kill(cpu->thread->thread, SIG_IPI);
     if (err && err != ESRCH) {
         fprintf(stderr, "qemu:%s: %s", __func__, strerror(err));
@@ -685,40 +681,10 @@ void qemu_init_vcpu(CPUState *cpu)
     /* accelerators all implement the AccelOpsClass */
     g_assert(cpus_accel != NULL && cpus_accel->create_vcpu_thread != NULL);
     cpus_accel->create_vcpu_thread(cpu);
-#ifdef __EMSCRIPTEN__
-    bql_unlock();
-    current_cpu = first_cpu;
-    cur_id = first_cpu->thread->id;
-    CPUState *_cpu;
-    CPU_FOREACH(_cpu) {
-        Notifier force_rcu;
-        CPUState *copy = _cpu;
-        qemu_mutex_lock(&rcu_registry_lock);
-        QLIST_INSERT_HEAD(&registry, &rcu_reader_array[cur_id], node);
-        qemu_mutex_unlock(&rcu_registry_lock);
-        rcu_register_thread();
-        force_rcu.notify = rr_force_rcu;
-        rcu_add_force_rcu_notifier(&force_rcu);
-        tcg_register_thread();
-        bql_lock();
-        qemu_thread_get_self(copy->thread);
-        copy->thread_id = qemu_get_thread_id();
-        copy->neg.can_do_io = true;
-        cpu_thread_signal_created(copy);
-        qemu_guest_random_seed_thread_part2(copy->random_seed);
-        rr_start_kick_timer();
-        copy = first_cpu;
-        copy->exit_request = 1;
-        bql_unlock();
-        replay_mutex_lock();
-    }
-    cur_id = 0;
-    bql_lock();
-#else
+
     while (!cpu->created) {
         qemu_cond_wait(&qemu_cpu_cond, &bql);
     }
-#endif
 }
 
 void cpu_stop_current(void)

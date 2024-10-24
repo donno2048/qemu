@@ -34,7 +34,6 @@
 #include "qemu/error-report.h"
 #include "qemu/queue.h"
 #include "qom/object.h"
-#include "qemu/rcu.h"
 
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -303,15 +302,6 @@ static int os_host_main_loop_wait(int64_t timeout)
 
     bql_unlock();
     replay_mutex_unlock();
-
-#ifdef __EMSCRIPTEN__
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 50; ++j) call_thread();
-        for (int j = 0; j < 50; ++j) iothread_single_step();
-        for (int j = 0; j < 1000; ++j) call_thread();
-    }
-#endif
-
 
     ret = qemu_poll_ns((GPollFD *)gpollfds->data, gpollfds->len, timeout);
 

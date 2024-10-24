@@ -27,6 +27,10 @@ if host_os == 'linux'
   tcg_ss.add(files('perf.c'))
 endif
 
+if host_os == 'Emscripten'
+  tcg_ss.add(files('emscripten/invoker.cpp'))
+endif
+
 tcg_ss = tcg_ss.apply({})
 
 libtcg_user = static_library('tcg_user',

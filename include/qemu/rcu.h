@@ -55,9 +55,7 @@ extern unsigned long rcu_gp_ctr;
 extern QemuEvent rcu_gp_event;
 
 #ifdef __EMSCRIPTEN__
-typedef QLIST_HEAD(, rcu_reader_data) ThreadList;
 static QemuMutex rcu_registry_lock;
-static ThreadList registry;
 #endif
 
 struct rcu_reader_data {
@@ -78,10 +76,6 @@ struct rcu_reader_data {
      */
     NotifierList force_rcu;
 };
-
-#ifdef __EMSCRIPTEN__
-extern __thread struct rcu_reader_data rcu_reader_array[10];
-#endif
 
 QEMU_DECLARE_CO_TLS(struct rcu_reader_data, rcu_reader)
 
@@ -151,6 +145,7 @@ struct rcu_head {
 };
 
 #ifdef __EMSCRIPTEN__
+static pthread_t cur_id = 0;
 void call_thread(void);
 #endif
 

@@ -189,12 +189,6 @@ static void *rr_cpu_thread_fn(void *arg)
     Notifier force_rcu;
     CPUState *cpu = arg;
 
-#ifdef __EMSCRIPTEN__
-    qemu_mutex_lock(&rcu_registry_lock);
-    QLIST_INSERT_HEAD(&registry, &rcu_reader_array[cur_id], node);
-    qemu_mutex_unlock(&rcu_registry_lock);
-#endif
-
     assert(tcg_enabled());
     rcu_register_thread();
     force_rcu.notify = rr_force_rcu;
@@ -209,7 +203,6 @@ static void *rr_cpu_thread_fn(void *arg)
     cpu_thread_signal_created(cpu);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
 
-#ifndef __EMSCRIPTEN__
     /* wait for initial kick-off after machine start */
     while (first_cpu->stopped) {
         qemu_cond_wait_bql(first_cpu->halt_cond);
@@ -220,7 +213,6 @@ static void *rr_cpu_thread_fn(void *arg)
             qemu_wait_io_event_common(cpu);
         }
     }
-#endif
 
     rr_start_kick_timer();
 
@@ -240,7 +232,7 @@ static void *rr_cpu_thread_fn(void *arg)
 
 #ifdef __EMSCRIPTEN__
         if (!first_cpu || !first_cpu->thread) continue;
-        cur_id = first_cpu->thread->id;
+        cur_id = first_cpu->thread->thread;
         bql_lock();
 #else
         bql_unlock();

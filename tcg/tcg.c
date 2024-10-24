@@ -61,7 +61,6 @@
 #endif
 
 #ifdef __EMSCRIPTEN__
-#define FFI_NATIVE_RAW_API 0
 #include "ffi.h"
 static TranslationBlock *last_tb = NULL;
 void binaryen_module_init(TCGContext *s);
@@ -6189,7 +6188,7 @@ int tcg_gen_code(TCGContext *s, TranslationBlock *tb, uint64_t pc_start)
     tb->tb_native_id = ((uintptr_t)(s->code_ptr) - (uintptr_t)(s->code_gen_buffer)) / 4 + 1;
     tb->wasm_countdown = -1;
     tb->wasm_instance = NULL;
-    binaryen_module_init(s);
+//    binaryen_module_init(s);
 #endif
 #ifdef TCG_TARGET_NEED_LDST_LABELS
     QSIMPLEQ_INIT(&s->ldst_labels);

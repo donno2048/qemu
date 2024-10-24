@@ -81,14 +81,6 @@ QML_FUNC_(spin)
  *
  * Note the special case for void *, so that we may pass "NULL".
  */
-#ifdef __EMSCRIPTEN__
-#define QEMU_MAKE_LOCKABLE(x)                                           \
-    _Generic((x), QemuLockable *: (x),                                  \
-             void *: qemu_null_lockable(x),                             \
-             QemuMutex *: qemu_make_lockable(x, QML_OBJ_(x, mutex)),    \
-             CoMutex *: qemu_make_lockable(x, QML_OBJ_(x, co_mutex)),   \
-             QemuSpin *: qemu_make_lockable(x, QML_OBJ_(x, spin)))
-#else
 #define QEMU_MAKE_LOCKABLE(x)                                           \
     _Generic((x), QemuLockable *: (x),                                  \
              void *: qemu_null_lockable(x),                             \
@@ -96,7 +88,6 @@ QML_FUNC_(spin)
              QemuRecMutex *: qemu_make_lockable(x, QML_OBJ_(x, rec_mutex)), \
              CoMutex *: qemu_make_lockable(x, QML_OBJ_(x, co_mutex)),   \
              QemuSpin *: qemu_make_lockable(x, QML_OBJ_(x, spin)))
-#endif
 
 /**
  * QEMU_MAKE_LOCKABLE_NONNULL - Make a polymorphic QemuLockable
@@ -107,20 +98,12 @@ QML_FUNC_(spin)
  * Returns a QemuLockable object that can be passed around
  * to a function that can operate with locks of any kind.
  */
-#ifdef __EMSCRIPTEN__
-#define QEMU_MAKE_LOCKABLE_NONNULL(x)                           \
-    _Generic((x), QemuLockable *: (x),                          \
-                  QemuMutex *: QML_OBJ_(x, mutex),              \
-                  CoMutex *: QML_OBJ_(x, co_mutex),             \
-                  QemuSpin *: QML_OBJ_(x, spin))
-#else
 #define QEMU_MAKE_LOCKABLE_NONNULL(x)                           \
     _Generic((x), QemuLockable *: (x),                          \
                   QemuMutex *: QML_OBJ_(x, mutex),              \
                   QemuRecMutex *: QML_OBJ_(x, rec_mutex), \
                   CoMutex *: QML_OBJ_(x, co_mutex),             \
                   QemuSpin *: QML_OBJ_(x, spin))
-#endif
 
 static inline void qemu_lockable_lock(QemuLockable *x)
 {

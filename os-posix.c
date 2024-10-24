@@ -56,9 +56,7 @@ static void termsig_handler(int signal, siginfo_t *info, void *c)
 
 void os_setup_signal_handling(void)
 {
-#ifdef __EMSCRIPTEN__
-    return;
-#endif
+#ifndef __EMSCRIPTEN__
     struct sigaction act;
 
     memset(&act, 0, sizeof(act));
@@ -67,6 +65,7 @@ void os_setup_signal_handling(void)
     sigaction(SIGINT,  &act, NULL);
     sigaction(SIGHUP,  &act, NULL);
     sigaction(SIGTERM, &act, NULL);
+#endif
 }
 
 void os_set_proc_name(const char *s)

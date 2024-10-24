@@ -27,7 +27,8 @@
 #include "sysemu/sysemu.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#elif defined(CONFIG_SDL)
+#endif
+#ifdef CONFIG_SDL
 #include <SDL.h>
 #endif
 

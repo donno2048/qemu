@@ -36,11 +36,6 @@
 #define IOTHREAD_POLL_MAX_NS_DEFAULT 0ULL
 #endif
 
-static __thread QemuThread *cur_thread;
-static __thread GMainLoop **cur_loop;
-static __thread bool *cur_thread_running;
-static __thread bool *cur_thread_gcontext;
-
 static void *iothread_run(void *opaque)
 {
     IOThread *iothread = opaque;
@@ -50,10 +45,6 @@ static void *iothread_run(void *opaque)
      * g_main_context_push_thread_default() must be called before anything
      * in this new thread uses glib.
      */
-    cur_thread = &iothread->thread;
-    cur_thread_running = &iothread->running;
-    cur_thread_gcontext = &iothread->run_gcontext;
-    cur_loop = &iothread->main_loop;
     g_main_context_push_thread_default(iothread->worker_context);
     qemu_set_current_aio_context(iothread->ctx);
     iothread->thread_id = qemu_get_thread_id();
@@ -69,9 +60,6 @@ static void *iothread_run(void *opaque)
          * other words, when we want to run the gcontext with the
          * iothread we need to pay some performance for functionality.
          */
-#ifdef __EMSCRIPTEN__
-        qemu_thread_switch(&iothread->thread);
-#endif
         aio_poll(iothread->ctx, true);
 
         /*
@@ -87,16 +75,6 @@ static void *iothread_run(void *opaque)
     rcu_unregister_thread();
     return NULL;
 }
-
-#ifdef __EMSCRIPTEN__
-void iothread_single_step(void)
-{
-    qemu_thread_switch(cur_thread);
-    aio_poll(qemu_get_aio_context(), true);
-
-    if (*cur_thread_running && qatomic_read(cur_thread_gcontext)) g_main_loop_run(*cur_loop);
-}
-#endif
 
 /* Runs in iothread_run() thread */
 static void iothread_stop_bh(void *opaque)

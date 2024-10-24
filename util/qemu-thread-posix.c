@@ -22,8 +22,6 @@
 #include <pthread_np.h>
 #endif
 
-#ifndef __EMSCRIPTEN__
-
 static bool name_threads;
 
 void qemu_thread_naming(bool enable)
@@ -687,4 +685,3 @@ void *qemu_thread_join(QemuThread *thread)
     return ret;
 }
 
-#endif

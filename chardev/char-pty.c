@@ -226,13 +226,17 @@ static void char_pty_finalize(Object *obj)
 # include <termios.h>
 #endif
 
-#ifdef __sun__
+
+
+
+#if defined(__sun__) || defined(__EMSCRIPTEN__)
 
 #if !defined(HAVE_OPENPTY)
 /* Once illumos has openpty(), this is going to be removed. */
 static int openpty(int *amaster, int *aslave, char *name,
                    struct termios *termp, struct winsize *winp)
 {
+#ifndef __EMSCRIPTEN__
     const char *slave;
     int mfd = -1, sfd = -1;
 
@@ -274,10 +278,12 @@ err:
         close(sfd);
     }
     close(mfd);
+#endif
     return -1;
 }
 #endif
 
+#ifndef __EMSCRIPTEN__
 static void cfmakeraw (struct termios *termios_p)
 {
     termios_p->c_iflag &=
@@ -290,6 +296,7 @@ static void cfmakeraw (struct termios *termios_p)
     termios_p->c_cc[VMIN] = 0;
     termios_p->c_cc[VTIME] = 0;
 }
+#endif
 #endif
 
 /* like openpty() but also makes it raw; return master fd */
