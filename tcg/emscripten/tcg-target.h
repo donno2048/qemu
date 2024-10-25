@@ -41,10 +41,11 @@ extern "C" {
 #define TCG_TARGET_REG_BITS  32
 #define TCG_TARGET_NB_REGS   31
 
-
 #define TCG_REG_CALL_STACK 1
 #define TCG_TARGET_STACK_ALIGN 16
 #define TCG_TARGET_CALL_STACK_OFFSET 0
+
+#define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
 
 typedef int TCGReg;
 
@@ -79,6 +80,8 @@ typedef int TCGReg;
 #define TCG_TARGET_HAS_mulsh_i32        0
 #define TCG_TARGET_HAS_goto_ptr         0
 #define TCG_TARGET_HAS_direct_jump      0
+#define TCG_TARGET_HAS_tst              0
+#define TCG_TARGET_HAS_negsetcond_i32   0
 
 
 #define TCG_AREG0 0
@@ -93,7 +96,7 @@ enum expr_type {
 static inline void tcg_out_expr(void *s, void *expr, enum expr_type tpe_mask);
 void flush_icache_range(uintptr_t start, uintptr_t stop);
 
-void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_addr, uintptr_t addr);
+//void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_addr, uintptr_t addr);
 
 // TODO
 #define TCG_TARGET_DEFAULT_MO 0

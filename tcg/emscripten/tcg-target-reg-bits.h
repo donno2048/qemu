@@ -1,0 +1,4 @@
+#ifndef TCG_TARGET_REG_BITS_H
+#define TCG_TARGET_REG_BITS_H
+#define TCG_TARGET_REG_BITS 32
+#endif
