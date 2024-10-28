@@ -82,6 +82,21 @@ typedef int TCGReg;
 #define TCG_TARGET_HAS_direct_jump      0
 #define TCG_TARGET_HAS_tst              0
 #define TCG_TARGET_HAS_negsetcond_i32   0
+#define TCG_TARGET_HAS_qemu_ldst_i128   0
+#define TCG_TARGET_HAS_qemu_st8_i32     0
+#define TCG_TARGET_HAS_extract2_i32     0
+
+
+#if TCG_TARGET_REG_BITS == 32
+# define TCG_TARGET_CALL_ARG_I32        TCG_CALL_ARG_EVEN
+# define TCG_TARGET_CALL_ARG_I64        TCG_CALL_ARG_EVEN
+# define TCG_TARGET_CALL_ARG_I128       TCG_CALL_ARG_EVEN
+#else
+# define TCG_TARGET_CALL_ARG_I32        TCG_CALL_ARG_NORMAL
+# define TCG_TARGET_CALL_ARG_I64        TCG_CALL_ARG_NORMAL
+# define TCG_TARGET_CALL_ARG_I128       TCG_CALL_ARG_NORMAL
+#endif
+#define TCG_TARGET_CALL_RET_I128        TCG_CALL_RET_NORMAL
 
 
 #define TCG_AREG0 0
